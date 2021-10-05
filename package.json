@@ -1,0 +1,21 @@
+{
+  "name": "nortic3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-writer": "^1.6.0",
+    "node-fetch": "^3.0.0",
+    "xlsx": "^0.17.2"
+  },
+  "type": "module",
+  "devDependencies": {
+    "prettier": "2.4.1"
+  }
+}
