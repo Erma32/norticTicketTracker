@@ -6,6 +6,25 @@ async function getTicketsForEvent(eventUrl) {
   return response.json();
 }
 
+async function getEventsForOrganizer(organizerId) {
+  const url = "https://www.nortic.se/api/json/organizer/";
+  const response = await fetch(url + organizerId);
+  const {events} = await response.json();
+  return events;
+}
+
+async function getEventInfo(eventId) {
+  const url = "https://www.nortic.se/api/json/event/";
+  const response = await fetch(url + eventId);
+  return response.json();
+}
+
+async function getShowInfo(showId) {
+  const url = "https://www.nortic.se/api/json/show/";
+  const response = await fetch(url + showId);
+  return response.json();
+}
+
 async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
   const workbook = reader.readFile(xlsxFilePath);
   const sheet_name_list = workbook.SheetNames;
@@ -25,7 +44,7 @@ async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
   const ws = reader.utils.json_to_sheet(sheetData);
   const wb = reader.utils.book_new();
   reader.utils.book_append_sheet(wb, ws, "Responses");
-  reader.writeFile(wb, "./boelBiljetter.xlsx");
+  reader.writeFile(wb, xlsxFilePath);
 
   return "Retrieved " + eventNickname + " tickets at " + new Date();
 }
@@ -33,15 +52,15 @@ async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
 function go() {
   getAndWriteTicketInfo(
     "./boelBiljetter.xlsx",
-    "http://www.nortic.se/api/json/organizer/924/event/33860",
+    "https://www.nortic.se/api/json/organizer/924/event/33860",
     "Boel"
   ).then(function (result) {
     console.log(result);
   });
-  
+
   getAndWriteTicketInfo(
     "./toddyBiljetter.xlsx",
-    "http://www.nortic.se/api/json/organizer/924/event/33943",
+    "https://www.nortic.se/api/json/organizer/924/event/33943",
     "Toddy"
   ).then(function (result) {
     console.log(result);
