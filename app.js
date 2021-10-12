@@ -38,6 +38,15 @@ async function getShowsForEvent(eventId) {
   return shows;
 }
 
+function getDataObject(amountSold, amountBooked, error) {
+  return {
+    timestamp: new Date().toLocaleString(),
+    amountSold: amountSold,
+    amountBooked: amountBooked,
+    error: error,
+  };
+}
+
 async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
   const workbook = reader.readFile(xlsxFilePath);
   const sheet_name_list = workbook.SheetNames;
@@ -46,13 +55,10 @@ async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
   );
 
   const data = await getTicketsForEvent(eventUrl);
-  const jojo = {
-    timestamp: new Date().toLocaleString(),
-    amountSold: data.soldEvents.amountSold,
-    amountBooked: data.soldEvents.amountBooked,
-    error: data.error,
-  };
-  sheetData.push(jojo);
+  const { soldEvents } = data;
+  const { amountBooked, amountSold } = soldEvents;
+  const dataObject = getDataObject(amountSold, amountBooked, data.error);
+  sheetData.push(dataObject);
 
   const ws = reader.utils.json_to_sheet(sheetData);
   const wb = reader.utils.book_new();
@@ -62,7 +68,38 @@ async function getAndWriteTicketInfo(xlsxFilePath, eventUrl, eventNickname) {
   return "Retrieved " + eventNickname + " tickets at " + new Date();
 }
 
-function go() {
+async function getTicketsForAllShows(
+  organizerId,
+  eventId,
+  xlsxFilePath,
+  eventNickname
+) {
+  const showArray = await getShowsForEvent(eventId);
+
+  const workbook = reader.readFile(xlsxFilePath);
+  const sheetArray = workbook.SheetNames;
+
+  const wb = reader.utils.book_new();
+  for (let i = 0; i < showArray.length; i++) {
+    const sheetData = reader.utils.sheet_to_json(
+      workbook.Sheets[sheetArray[i]]
+    );
+
+    const data = await getTicketsForShow(organizerId, showArray[i].id);
+    const { soldEvents } = data;
+    const { amountBooked, amountSold } = soldEvents;
+    const dataObject = getDataObject(amountSold, amountBooked, data.error);
+    sheetData.push(dataObject);
+
+    const ws = reader.utils.json_to_sheet(sheetData);
+    reader.utils.book_append_sheet(wb, ws, "Show " + i);
+
+    reader.writeFile(wb, xlsxFilePath);
+  }
+  return "Retrieved " + eventNickname + " tickets at " + new Date();
+}
+
+function runRetrievals() {
   getAndWriteTicketInfo(
     "./boelBiljetter.xlsx",
     "https://www.nortic.se/api/json/organizer/924/event/33860",
@@ -79,42 +116,35 @@ function go() {
     console.log(result);
   });
 
-  getTicketsForAllShows("924", "33860", "./boelShowSpecific.xlsx").then((r) =>
-    console.log(r)
+  getAndWriteTicketInfo(
+    "./varGladBiljetter.xlsx",
+    "https://www.nortic.se/api/json/organizer/924/event/34111",
+    "Var Glad"
+  ).then(function (result) {
+    console.log(result);
+  });
+
+  getTicketsForAllShows(
+      "924", 
+      "33860", 
+      "./boelShowSpecific.xlsx", 
+      "Boel"
+  ).then(
+    (r) => console.log(r)
   );
-  getTicketsForAllShows("924", "33943", "./toddyShowSpecific.xlsx").then((r) =>
-    console.log(r)
-  );
+  getTicketsForAllShows(
+    "924",
+    "33943",
+    "./toddyShowSpecific.xlsx",
+    "Toddy"
+  ).then((r) => console.log(r));
+  getTicketsForAllShows(
+    "924",
+    "34111",
+    "./varGladShowSpecific.xlsx",
+    "Var Glad"
+  ).then((r) => console.log(r));
 }
 
-async function getTicketsForAllShows(organizerId, eventId, xlsxFilePath) {
-  const showArray = await getShowsForEvent(eventId);
-
-  const workbook = reader.readFile(xlsxFilePath);
-  const sheetArray = workbook.SheetNames;
-
-  const wb = reader.utils.book_new();
-  for (let i = 0; i < showArray.length; i++) {
-    const sheetData = reader.utils.sheet_to_json(
-      workbook.Sheets[sheetArray[i]]
-    );
-
-    const data = await getTicketsForShow(organizerId, showArray[i].id);
-    const dataObject = {
-      timestamp: new Date().toLocaleString(),
-      amountSold: data.soldEvents.amountSold,
-      amountBooked: data.soldEvents.amountBooked,
-      error: data.error,
-    };
-
-    sheetData.push(dataObject);
-
-    const ws = reader.utils.json_to_sheet(sheetData);
-    reader.utils.book_append_sheet(wb, ws, "Show " + i);
-
-    reader.writeFile(wb, xlsxFilePath);
-  }
-}
-
-go();
-setInterval(go, 1800000);
+runRetrievals();
+setInterval(runRetrievals, 1800000);
